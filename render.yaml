@@ -1,0 +1,23 @@
+databases:
+  - name: eduguide-db
+    databaseName: eduguidedb
+    user: poojarani
+    plan: free
+
+services:
+  - type: web
+    name: eduguide-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma db push && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eduguide-db
+          property: connectionString
