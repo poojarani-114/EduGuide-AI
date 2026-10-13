@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(uuid())
+  name           String
+  email          String           @unique
+  passwordHash   String
+  role           String           @default("STUDENT")
+  accountStatus  String           @default("ACTIVE")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  profile        StudentProfile?
+  assessments    CareerAssessment[]
+  recommendations CareerRecommendation[]
+  courses        StudentCourse[]
+  skills         StudentSkill[]
+  roadmaps       CareerRoadmap[]
+  studyPlans     StudyPlan[]
+  quizAttempts   QuizAttempt[]
+  conversations  ChatConversation[]
+  notifications  Notification[]
+  feedback       Feedback[]
+}
+
+model StudentProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id])
+  educationLevel      String?
+  institution         String?
+  degree              String?
+  studyYear           String?
+  interests           String?  // JSON string
+  skills              String?  // JSON string
+  careerGoals         String?  // JSON string
+  learningPreferences String?  // JSON string
+  availableStudyHours Int?     // Hours per week
+  updatedAt           DateTime @updatedAt
+}
+
+model Career {
+  id                       String   @id @default(uuid())
+  title                    String
+  category                 String
+  description              String
+  requiredSkills           String?  // JSON string
+  recommendedQualifications String?  // JSON string
+  resourceUrls             String?  // JSON string
+  sourceName               String?
+  sourceUpdatedAt          DateTime?
+  createdAt                DateTime @default(now())
+  roadmaps                 CareerRoadmap[]
+  recommendations          CareerRecommendation[]
+}
+
+model CareerAssessment {
+  id                String   @id @default(uuid())
+  studentId         String
+  user              User     @relation(fields: [studentId], references: [id])
+  answers           String   // JSON string
+  assessmentVersion String
+  completedAt       DateTime @default(now())
+}
+
+model CareerRecommendation {
+  id             String   @id @default(uuid())
+  studentId      String
+  user           User     @relation(fields: [studentId], references: [id])
+  careerId       String
+  career         Career   @relation(fields: [careerId], references: [id])
+  matchScore     Float
+  explanation    String
+  createdAt      DateTime @default(now())
+}
+
+model Course {
+  id             String   @id @default(uuid())
+  title          String
+  provider       String
+  category       String
+  description    String
+  difficulty     String
+  duration       String
+  prerequisites  String?  // JSON string
+  skillsTaught   String?  // JSON string
+  priceType      String   // FREE or PAID
+  courseUrl      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  students       StudentCourse[]
+}
+
+model StudentCourse {
+  id                 String   @id @default(uuid())
+  studentId          String
+  user               User     @relation(fields: [studentId], references: [id])
+  courseId           String
+  course             Course   @relation(fields: [courseId], references: [id])
+  status             String   @default("NOT_STARTED")
+  progressPercentage Int      @default(0)
+  startedAt          DateTime?
+  completedAt        DateTime?
+}
+
+model Skill {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  description String
+}
+
+model StudentSkill {
+  id               String   @id @default(uuid())
+  studentId        String
+  user             User     @relation(fields: [studentId], references: [id])
+  skillId          String
+  proficiencyLevel Int      // e.g., 1-5
+  assessmentMethod String
+  updatedAt        DateTime @updatedAt
+}
+
+model CareerRoadmap {
+  id        String   @id @default(uuid())
+  studentId String
+  user      User     @relation(fields: [studentId], references: [id])
+  careerId  String
+  career    Career   @relation(fields: [careerId], references: [id])
+  title     String
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  milestones RoadmapMilestone[]
+}
+
+model RoadmapMilestone {
+  id             String   @id @default(uuid())
+  roadmapId      String
+  roadmap        CareerRoadmap @relation(fields: [roadmapId], references: [id])
+  title          String
+  description    String
+  sequenceNumber Int
+  status         String   @default("PENDING")
+  targetDate     DateTime?
+  completedAt    DateTime?
+}
+
+model StudyPlan {
+  id        String   @id @default(uuid())
+  studentId String
+  user      User     @relation(fields: [studentId], references: [id])
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks     StudyTask[]
+}
+
+model StudyTask {
+  id               String   @id @default(uuid())
+  studyPlanId      String
+  studyPlan        StudyPlan @relation(fields: [studyPlanId], references: [id])
+  subject          String
+  title            String
+  description      String?
+  priority         String   @default("MEDIUM")
+  estimatedMinutes Int
+  scheduledAt      DateTime?
+  dueAt            DateTime?
+  status           String   @default("PENDING")
+  completedAt      DateTime?
+}
+
+model QuizAttempt {
+  id             String   @id @default(uuid())
+  studentId      String
+  user           User     @relation(fields: [studentId], references: [id])
+  topic          String
+  score          Float
+  totalQuestions Int
+  answers        String   // JSON string
+  createdAt      DateTime @default(now())
+}
+
+model ChatConversation {
+  id        String   @id @default(uuid())
+  studentId String
+  user      User     @relation(fields: [studentId], references: [id])
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id              String   @id @default(uuid())
+  conversationId  String
+  conversation    ChatConversation @relation(fields: [conversationId], references: [id])
+  senderType      String   // USER or AI
+  content         String
+  sourceReferences String? // JSON string
+  createdAt       DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  feature   String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
